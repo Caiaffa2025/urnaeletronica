@@ -1,0 +1,6 @@
+{
+  "name": "Sistema de Votação - Urna Eletrônica",
+  "description": "Simulador e sistema de votação para eleição presidencial no formato da Urna Eletrônica brasileira.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

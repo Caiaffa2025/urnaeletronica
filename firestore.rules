@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Candidates collection
+    match /candidates/{candidateId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['number', 'name', 'shortName', 'party', 'partyAcronym', 'viceName', 'slogan', 'imageUrl', 'color'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 1000000;
+      allow delete: if false;
+    }
+
+    // Votes collection
+    match /votes/{voteId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['type', 'candidateName', 'candidateNumber', 'timestamp'])
+        && request.resource.data.type is string
+        && request.resource.data.type.size() <= 20;
+      allow update, delete: if false;
+    }
+  }
+}

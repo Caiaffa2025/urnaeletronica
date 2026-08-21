@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Candidate": {
+      "title": "Candidate",
+      "description": "Represents a presidential candidate with editable information and photo image URL",
+      "type": "object",
+      "properties": {
+        "number": { "type": "string", "maxLength": 10 },
+        "name": { "type": "string", "maxLength": 200 },
+        "shortName": { "type": "string", "maxLength": 50 },
+        "party": { "type": "string", "maxLength": 200 },
+        "partyAcronym": { "type": "string", "maxLength": 20 },
+        "viceName": { "type": "string", "maxLength": 200 },
+        "slogan": { "type": "string", "maxLength": 300 },
+        "imageUrl": { "type": "string", "maxLength": 1000000 },
+        "color": { "type": "string", "maxLength": 30 },
+        "updatedAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["number", "name", "shortName", "party", "partyAcronym", "viceName", "slogan", "imageUrl", "color"]
+    },
+    "Vote": {
+      "title": "Vote",
+      "description": "Represents an individual vote cast in the Urna Eletrônica",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "maxLength": 20 },
+        "candidateName": { "type": "string", "maxLength": 200 },
+        "candidateNumber": { "type": "string", "maxLength": 20 },
+        "timestamp": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["type", "candidateName", "candidateNumber", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Candidates collection containing presidential candidate records"
+    },
+    "/votes/{voteId}": {
+      "schema": "Vote",
+      "description": "Public audit trail of votes cast in the electronic ballot machine"
+    }
+  }
+}
