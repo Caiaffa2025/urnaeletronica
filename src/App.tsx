@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { Candidate, ElectionStats, VoteRecord, VoteType } from './types';
 import { CANDIDATES as DEFAULT_CANDIDATES } from './data/candidates';
@@ -16,7 +16,7 @@ import {
   clearAllVotesInFirestore,
   generateInitialVotes
 } from './services/firebaseService';
-import { Vote, Info, CheckCircle2, ShieldCheck, Radio } from 'lucide-react';
+import { Vote, Info, CheckCircle2, ShieldCheck, Radio, Clock } from 'lucide-react';
 
 export default function App() {
   // Candidate data state synchronized with Firestore database
@@ -55,6 +55,38 @@ export default function App() {
 
   // Modal for Boletim de Urna
   const [isBoletimOpen, setIsBoletimOpen] = useState<boolean>(false);
+
+  // Live timer for tracking duration since the first vote was recorded
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Find the earliest recorded vote timestamp in the session
+  const earliestVoteTime = useMemo(() => {
+    if (!votes || votes.length === 0) return null;
+    let minTime = Infinity;
+    for (const v of votes) {
+      const t = v.timestamp instanceof Date ? v.timestamp.getTime() : new Date(v.timestamp).getTime();
+      if (!isNaN(t) && t < minTime) {
+        minTime = t;
+      }
+    }
+    return minTime === Infinity ? null : minTime;
+  }, [votes]);
+
+  // Format session duration string (HH:MM:SS)
+  const sessionDurationFormatted = useMemo(() => {
+    if (!earliestVoteTime) return '00:00:00';
+    const elapsedSeconds = Math.max(0, Math.floor((currentTime - earliestVoteTime) / 1000));
+    const hours = Math.floor(elapsedSeconds / 3600);
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+    const seconds = elapsedSeconds % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, [earliestVoteTime, currentTime]);
 
   // Derived selected candidate based on current digits
   const selectedCandidate: Candidate | null = candidatesMap[digits] || null;
@@ -277,7 +309,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-gray-800 pt-2 sm:pt-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-gray-800 pt-2 sm:pt-0">
             {/* Real-time Cloud Sync Badge */}
             <div className="flex items-center gap-1.5 bg-[#222] border border-emerald-500/60 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-black text-emerald-400 shadow-xs">
               <span className="relative flex h-2 w-2">
@@ -287,9 +319,18 @@ export default function App() {
               <span className="uppercase tracking-wider">TEMPO REAL ATIVO</span>
             </div>
 
+            {/* Session Duration Display (Time since first vote recorded) */}
+            <div 
+              className="flex items-center gap-1.5 text-[11px] sm:text-xs font-black bg-[#222] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded border border-gray-700 text-amber-300"
+              title="Duração da sessão eleitoral (tempo decorrido desde o primeiro voto registrado)"
+            >
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+              <span>SESSÃO: <strong className="text-white text-xs sm:text-sm font-mono">{sessionDurationFormatted}</strong></span>
+            </div>
+
             <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-black bg-[#222] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded border border-gray-700">
               <Vote className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#009541]" />
-              <span>VOTOS TOTAIS: <strong className="text-[#009541] text-xs sm:text-sm font-mono">{stats.totalVotes}</strong></span>
+              <span>VOTOS: <strong className="text-[#009541] text-xs sm:text-sm font-mono">{stats.totalVotes}</strong></span>
             </div>
 
             <button
