@@ -61,39 +61,39 @@ export const UrnaMachine: React.FC<UrnaMachineProps> = ({
   }, [onNumberPress, onConfirmaPress, onCorrigePress, onBrancoPress]);
 
   return (
-    <div className="relative bg-[#e0e0e0] border-[6px] md:border-[8px] border-[#333] rounded-2xl p-2.5 md:p-3.5 shadow-2xl max-w-3xl mx-auto my-4 text-[#1a1a1a]">
+    <div className="relative bg-[#e0e0e0] border-4 sm:border-[6px] md:border-[8px] border-[#333] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 shadow-2xl max-w-3xl mx-auto my-3 sm:my-6 text-[#1a1a1a]">
       {/* Top Header Section */}
-      <div className="flex flex-wrap items-center justify-between pb-2 mb-2.5 border-b-2 md:border-b-4 border-[#222] gap-2 bg-[#d5d5d5] p-2 md:p-2.5 rounded-lg border border-[#bbb]">
+      <div className="flex flex-wrap items-center justify-between pb-2 mb-2 sm:mb-3 border-b-2 sm:border-b-4 border-[#222] gap-2 bg-[#d5d5d5] p-2 sm:p-2.5 rounded-lg border border-[#bbb]">
         {/* Brasil Emblem / Coat of Arms Header */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded bg-[#111] border border-[#f37021] flex items-center justify-center text-white font-black text-[10px] shadow-xs">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded bg-[#111] border border-[#f37021] flex items-center justify-center text-white font-black text-[9px] sm:text-[10px] shadow-xs">
             TSE
           </div>
           <div>
-            <h2 className="text-sm md:text-base font-black tracking-wider text-[#1a1a1a] uppercase leading-none">
+            <h2 className="text-xs sm:text-sm md:text-base font-black tracking-wider text-[#1a1a1a] uppercase leading-none">
               Urna Eletrônica
             </h2>
-            <p className="text-[10px] text-[#444] font-extrabold uppercase tracking-wider mt-0.5">
+            <p className="text-[9px] sm:text-[10px] text-[#444] font-extrabold uppercase tracking-wider mt-0.5">
               Justiça Eleitoral • República Federativa do Brasil
             </p>
           </div>
         </div>
 
         {/* Audio Mute/Unmute Toggle & ADM button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {onOpenAdmin && (
             <button
               onClick={onOpenAdmin}
-              className="px-2.5 py-1 rounded text-[11px] font-black uppercase tracking-wider transition-all border border-black cursor-pointer bg-yellow-400 hover:bg-yellow-500 text-black shadow-xs flex items-center gap-1"
-              title="Abrir Painel ADM com senha 1966"
+              className="px-2 sm:px-2.5 py-1 rounded text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all border border-black cursor-pointer bg-yellow-400 hover:bg-yellow-500 text-black shadow-xs flex items-center gap-1"
+              title="Abrir Painel Administrativo"
             >
-              <span>⚙️ ADM (1966)</span>
+              <span>⚙️ ADM</span>
             </button>
           )}
 
           <button
             onClick={onToggleSound}
-            className={`px-2.5 py-1 rounded text-[11px] font-black uppercase tracking-wider transition-all border border-black cursor-pointer shadow-xs ${
+            className={`px-2 sm:px-2.5 py-1 rounded text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all border border-black cursor-pointer shadow-xs ${
               soundEnabled
                 ? 'bg-[#009541] text-white hover:bg-[#007031]'
                 : 'bg-[#888] text-white hover:bg-[#666]'
@@ -106,10 +106,10 @@ export const UrnaMachine: React.FC<UrnaMachineProps> = ({
       </div>
 
       {/* Urna Main Layout: Screen on Left, Keypad on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch bg-[#222] p-2 rounded-xl border-2 border-black">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-stretch bg-[#222] p-2 sm:p-3 rounded-xl border-2 border-black">
         
-        {/* Left: LCD Screen (7 Cols) */}
-        <div className="lg:col-span-7 flex flex-col justify-center">
+        {/* Left: LCD Screen (7 Cols on desktop/tablet) */}
+        <div className="md:col-span-7 flex flex-col justify-center">
           <UrnaScreen
             digits={digits}
             selectedCandidate={selectedCandidate}
@@ -119,8 +119,8 @@ export const UrnaMachine: React.FC<UrnaMachineProps> = ({
           />
         </div>
 
-        {/* Right: Black Tactile Keypad (5 Cols) */}
-        <div className="lg:col-span-5 flex flex-col justify-center">
+        {/* Right: Black Tactile Keypad (5 Cols on desktop/tablet) */}
+        <div className="md:col-span-5 flex flex-col justify-center">
           <UrnaKeypad
             onNumberPress={onNumberPress}
             onBrancoPress={onBrancoPress}
@@ -131,9 +131,9 @@ export const UrnaMachine: React.FC<UrnaMachineProps> = ({
       </div>
 
       {/* Physical ridges bottom detail */}
-      <div className="mt-4 flex justify-around opacity-30 px-6">
+      <div className="mt-3 sm:mt-4 flex justify-around opacity-30 px-3 sm:px-6">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="w-8 h-2 bg-slate-600 rounded-xs shadow-inner" />
+          <div key={i} className="w-5 sm:w-8 h-1.5 sm:h-2 bg-slate-600 rounded-xs shadow-inner" />
         ))}
       </div>
     </div>

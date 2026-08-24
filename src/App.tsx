@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Candidate, ElectionStats, VoteRecord } from './types';
+import { Candidate, ElectionStats, VoteRecord, VoteType } from './types';
 import { CANDIDATES as DEFAULT_CANDIDATES } from './data/candidates';
 import { CandidateCard } from './components/CandidateCard';
 import { UrnaMachine } from './components/UrnaMachine';
@@ -12,6 +12,44 @@ import { subscribeCandidates } from './services/firebaseService';
 import { Vote, Info, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 const STORAGE_KEY = 'urna_eleitoral_votos_v2';
+
+// Helper to generate realistic simulated votes
+const generateSimulatedVotes = (count: number, candidates: Record<string, Candidate>): VoteRecord[] => {
+  const batch: VoteRecord[] = [];
+  // Realistic political distribution (~52% Lula, ~42% Flávio, ~3% Branco, ~3% Nulo)
+  const pool: VoteType[] = [
+    '13', '13', '13', '13', '13', '13', '13', '13', '13', '13',
+    '22', '22', '22', '22', '22', '22', '22', '22',
+    'BRANCO',
+    'NULO'
+  ];
+  
+  const now = Date.now();
+  for (let i = 0; i < count; i++) {
+    const type = pool[Math.floor(Math.random() * pool.length)];
+    let candidateName = 'VOTO NULO';
+    let candidateNumber = type;
+    if (type === '13') {
+      candidateName = candidates['13']?.name || DEFAULT_CANDIDATES['13'].name;
+      candidateNumber = '13';
+    } else if (type === '22') {
+      candidateName = candidates['22']?.name || DEFAULT_CANDIDATES['22'].name;
+      candidateNumber = '22';
+    } else if (type === 'BRANCO') {
+      candidateName = 'VOTO EM BRANCO';
+      candidateNumber = 'BRANCO';
+    }
+
+    batch.push({
+      id: `vote-${now}-${i}-${Math.random().toString(36).substr(2, 5)}`,
+      type,
+      candidateName,
+      candidateNumber,
+      timestamp: new Date(now - Math.floor(Math.random() * 7200000) - (count - i) * 3000),
+    });
+  }
+  return batch;
+};
 
 export default function App() {
   // Candidate data state synchronized with Firestore database
@@ -32,17 +70,21 @@ export default function App() {
   const [isFim, setIsFim] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
-  // Voting statistics and audit log
+  // Voting statistics and audit log (initialized to 150 votes if no previous votes stored)
   const [votes, setVotes] = useState<VoteRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
     } catch {
       // Ignore localStorage errors
     }
-    return [];
+    // Default initial seed with 150 votes as requested
+    return generateSimulatedVotes(150, DEFAULT_CANDIDATES);
   });
 
   // Modal for Boletim de Urna
@@ -197,26 +239,29 @@ export default function App() {
 
   // Simulate batch votes for demonstration
   const handleSimulateBatch = (count: number) => {
-    const batch: VoteRecord[] = [];
-    const types: ('13' | '22' | 'BRANCO' | 'NULO')[] = ['13', '13', '22', '22', '13', '22', 'BRANCO', 'NULO'];
-    
-    for (let i = 0; i < count; i++) {
-      const type = types[Math.floor(Math.random() * types.length)];
-      let candidateName = 'VOTO NULO';
-      if (type === '13') candidateName = candidatesMap['13']?.name || 'LULA';
-      else if (type === '22') candidateName = candidatesMap['22']?.name || 'FLÁVIO RACHADINHA';
-      else if (type === 'BRANCO') candidateName = 'VOTO EM BRANCO';
+    const newVotes = generateSimulatedVotes(count, candidatesMap);
+    setVotes((prev) => [...prev, ...newVotes]);
+    audioService.playConfirmationChime();
+  };
 
-      batch.push({
-        id: `sim-${Date.now()}-${i}`,
-        type,
-        candidateName,
-        candidateNumber: type,
-        timestamp: new Date(Date.now() - Math.floor(Math.random() * 600000)),
-      });
+  // Set exactly 150 votes
+  const handleSetExact150 = () => {
+    const newVotes = generateSimulatedVotes(150, candidatesMap);
+    setVotes(newVotes);
+    audioService.playConfirmationChime();
+  };
+
+  // Fill up to 150 votes
+  const handleFillTo150 = () => {
+    const current = votes.length;
+    if (current < 150) {
+      const needed = 150 - current;
+      const newVotes = generateSimulatedVotes(needed, candidatesMap);
+      setVotes((prev) => [...prev, ...newVotes]);
+    } else {
+      const newVotes = generateSimulatedVotes(150, candidatesMap);
+      setVotes((prev) => [...prev, ...newVotes]);
     }
-
-    setVotes((prev) => [...prev, ...batch]);
     audioService.playConfirmationChime();
   };
 
@@ -251,10 +296,10 @@ export default function App() {
             <button
               onClick={() => setIsAdminOpen(true)}
               className="flex items-center gap-1.5 bg-[#009541] hover:bg-green-700 text-white text-[11px] sm:text-xs font-black uppercase px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded border-2 border-yellow-400 cursor-pointer shadow-sm transition-all active:translate-y-0.5 shrink-0"
-              title="Abrir Painel ADM com senha 1966 para editar fotos e informações dos candidatos"
+              title="Abrir Painel ADM para editar fotos e informações dos candidatos"
             >
               <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-300" />
-              <span>PAINEL ADM (1966)</span>
+              <span>PAINEL ADM</span>
             </button>
           </div>
         </div>
@@ -284,7 +329,7 @@ export default function App() {
               className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2.5 rounded-lg border-2 border-black font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:translate-y-0.5"
             >
               <ShieldCheck className="w-4 h-4 text-black" />
-              <span>⚙️ ABRIR PAINEL ADM (SENHA 1966)</span>
+              <span>⚙️ ABRIR PAINEL ADM</span>
             </button>
           </div>
         </div>
@@ -355,6 +400,8 @@ export default function App() {
             onReset={handleReset}
             onOpenBoletim={() => setIsBoletimOpen(true)}
             onSimulateBatch={handleSimulateBatch}
+            onSetExact150={handleSetExact150}
+            onFillTo150={handleFillTo150}
           />
         </section>
 

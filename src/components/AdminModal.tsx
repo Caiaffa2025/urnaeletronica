@@ -41,7 +41,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       setIsAuthenticated(true);
       setAuthError('');
     } else {
-      setAuthError('Senha incorreta! Digite a senha administrativa 1966.');
+      setAuthError('Senha incorreta! Acesso não autorizado.');
     }
   };
 
@@ -120,7 +120,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               <h2 className="text-lg font-black uppercase tracking-wider flex items-center gap-2">
                 PAINEL ADMINISTRATIVO (ADM)
                 <span className="text-[10px] bg-yellow-400 text-black font-black px-2 py-0.5 rounded uppercase">
-                  SENHA: 1966
+                  ACESSO RESTRITO
                 </span>
               </h2>
               <p className="text-xs text-gray-300 font-bold uppercase tracking-wide">
@@ -147,7 +147,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             <div>
               <h3 className="text-xl font-black uppercase tracking-tight text-black">ACESSO RESTRITO ADM</h3>
               <p className="text-xs font-bold text-gray-700 uppercase mt-1">
-                Insira a senha de administrador (1966) para liberar a edição das imagens e dados.
+                Insira a senha de administrador para liberar a edição das imagens e dados.
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="DIGITE A SENHA 1966"
+                  placeholder="DIGITE A SENHA DE ACESSO"
                   required
                   autoFocus
                   className="w-full bg-white border-2 border-black pl-10 pr-4 py-3 rounded text-center font-black tracking-widest text-lg uppercase focus:ring-2 focus:ring-black outline-none"

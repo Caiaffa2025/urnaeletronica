@@ -22,23 +22,23 @@ export const UrnaKeypad: React.FC<UrnaKeypadProps> = ({
   ];
 
   return (
-    <div className="bg-[#2b2b2b] p-3 md:p-3.5 rounded-xl border-2 border-black shadow-xl flex flex-col justify-between select-none max-w-xs mx-auto w-full">
+    <div className="bg-[#2b2b2b] p-2.5 sm:p-3.5 rounded-xl border-2 border-black shadow-xl flex flex-col justify-between select-none max-w-xs sm:max-w-sm mx-auto w-full">
       {/* Header section */}
-      <div className="text-center mb-2 pb-1 border-b border-[#444]">
-        <div className="text-[10px] font-black text-[#888] tracking-widest uppercase">
+      <div className="text-center mb-1.5 sm:mb-2 pb-1 border-b border-[#444]">
+        <div className="text-[9px] sm:text-[10px] font-black text-[#888] tracking-widest uppercase">
           JUSTIÇA ELEITORAL
         </div>
       </div>
 
       {/* Numeric Grid */}
-      <div className="flex flex-col items-center gap-2 mb-3">
+      <div className="flex flex-col items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
         {numberRows.map((row, rIdx) => (
-          <div key={rIdx} className="flex justify-center gap-2 w-full">
+          <div key={rIdx} className="flex justify-center gap-1.5 sm:gap-2 w-full">
             {row.map((num) => (
               <button
                 key={num}
                 onClick={() => onNumberPress(num)}
-                className="w-11 h-10 md:w-13 md:h-11 bg-[#111] hover:bg-black active:bg-[#000] text-white font-mono font-bold text-lg md:text-xl rounded shadow-md border-b-3 border-black active:border-b-0 transition-all flex items-center justify-center cursor-pointer"
+                className="w-11 h-11 sm:w-13 sm:h-12 md:w-14 md:h-12 bg-[#111] hover:bg-black active:bg-[#000] text-white font-mono font-bold text-lg sm:text-xl rounded shadow-md border-b-3 border-black active:border-b-0 transition-all flex items-center justify-center cursor-pointer min-h-[44px]"
               >
                 <span>{num}</span>
               </button>
@@ -48,11 +48,11 @@ export const UrnaKeypad: React.FC<UrnaKeypadProps> = ({
       </div>
 
       {/* Action Buttons Row */}
-      <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-[#444] items-end">
+      <div className="grid grid-cols-3 gap-1 sm:gap-1.5 pt-1.5 sm:pt-2 border-t border-[#444] items-end">
         {/* BRANCO Button */}
         <button
           onClick={onBrancoPress}
-          className="h-11 bg-white hover:bg-gray-100 text-black text-[10px] font-black uppercase tracking-wider rounded border-b-3 border-gray-400 active:border-b-0 active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer px-0.5"
+          className="h-11 sm:h-12 min-h-[44px] bg-white hover:bg-gray-100 text-black text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded border-b-3 border-gray-400 active:border-b-0 active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer px-0.5"
         >
           <span>BRANCO</span>
         </button>
@@ -60,7 +60,7 @@ export const UrnaKeypad: React.FC<UrnaKeypadProps> = ({
         {/* CORRIGE Button */}
         <button
           onClick={onCorrigePress}
-          className="h-11 bg-[#f37021] hover:bg-[#e06010] text-black text-[10px] font-black uppercase tracking-wider rounded border-b-3 border-[#c25a1a] active:border-b-0 active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer px-0.5"
+          className="h-11 sm:h-12 min-h-[44px] bg-[#f37021] hover:bg-[#e06010] text-black text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded border-b-3 border-[#c25a1a] active:border-b-0 active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer px-0.5"
         >
           <span>CORRIGE</span>
         </button>
@@ -68,7 +68,7 @@ export const UrnaKeypad: React.FC<UrnaKeypadProps> = ({
         {/* CONFIRMA Button */}
         <button
           onClick={onConfirmaPress}
-          className="h-15 bg-[#009541] hover:bg-[#008035] text-black text-[11px] font-black uppercase tracking-wider rounded border-b-3 border-[#007031] active:border-b-0 active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer px-0.5 -mt-3 shadow-md"
+          className="h-14 sm:h-16 min-h-[56px] bg-[#009541] hover:bg-[#008035] text-black text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded border-b-3 border-[#007031] active:border-b-0 active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer px-0.5 -mt-2.5 sm:-mt-3 shadow-md"
         >
           <span>CONFIRMA</span>
         </button>

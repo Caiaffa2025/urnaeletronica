@@ -9,6 +9,8 @@ interface TallyDashboardProps {
   onReset: () => void;
   onOpenBoletim: () => void;
   onSimulateBatch: (count: number) => void;
+  onSetExact150?: () => void;
+  onFillTo150?: () => void;
 }
 
 export const TallyDashboard: React.FC<TallyDashboardProps> = ({
@@ -18,6 +20,8 @@ export const TallyDashboard: React.FC<TallyDashboardProps> = ({
   onReset,
   onOpenBoletim,
   onSimulateBatch,
+  onSetExact150,
+  onFillTo150,
 }) => {
   const lula = candidates['13'];
   const flavio = candidates['22'];
@@ -48,7 +52,7 @@ export const TallyDashboard: React.FC<TallyDashboardProps> = ({
   return (
     <div className="bg-white rounded-xl border-2 border-black shadow-sm p-4 sm:p-6 md:p-8 my-6 sm:my-8 max-w-5xl mx-auto">
       {/* Dashboard Title & Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-6 border-b-2 border-black">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 sm:pb-6 border-b-2 border-black">
         <div>
           <div className="flex items-center gap-2 text-black font-black text-xs uppercase tracking-widest mb-1">
             <BarChart3 className="w-4 h-4 text-[#f37021]" />
@@ -57,22 +61,63 @@ export const TallyDashboard: React.FC<TallyDashboardProps> = ({
           <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-black tracking-tight uppercase">
             Placar de Resultados da Eleição
           </h2>
+          <p className="text-xs text-gray-600 font-bold uppercase mt-0.5">
+            Total atual apurado: <strong className="text-black">{stats.totalVotes} votos</strong> {stats.totalVotes >= 150 ? '(Atingiu 150+ votos)' : `(Faltam ${150 - stats.totalVotes} para 150 votos)`}
+          </p>
         </div>
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Quick 150 Votes Simulation Buttons */}
+          <button
+            onClick={() => onSimulateBatch(150)}
+            className="px-3.5 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 border-2 border-black cursor-pointer shadow-sm active:translate-y-0.5"
+            title="Adicionar +150 votos instantâneos à apuração"
+          >
+            <Sparkles className="w-4 h-4 text-yellow-300" />
+            <span>+150 VOTOS</span>
+          </button>
+
+          {onFillTo150 && stats.totalVotes < 150 && (
+            <button
+              onClick={onFillTo150}
+              className="px-3.5 py-2 rounded bg-yellow-400 hover:bg-yellow-500 text-black font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 border-2 border-black cursor-pointer shadow-xs active:translate-y-0.5"
+              title="Preencher apuração até totalizar 150 votos"
+            >
+              <Vote className="w-4 h-4 text-black" />
+              <span>COMPLETAR 150 VOTOS</span>
+            </button>
+          )}
+
+          {onSetExact150 && (
+            <button
+              onClick={onSetExact150}
+              className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-black font-black text-xs uppercase transition-all flex items-center gap-1 border-2 border-black cursor-pointer shadow-xs"
+              title="Redefinir apuração com exatamente 150 votos distribuídos"
+            >
+              <span>GERAR 150 VOTOS</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => onSimulateBatch(50)}
+            className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-black font-black text-xs uppercase transition-all flex items-center gap-1 border-2 border-black cursor-pointer shadow-xs"
+            title="Adicionar +50 votos"
+          >
+            <span>+50</span>
+          </button>
+
           <button
             onClick={() => onSimulateBatch(10)}
-            className="px-3.5 py-2 rounded bg-gray-100 hover:bg-gray-200 text-black font-black text-xs uppercase transition-all flex items-center gap-1.5 border-2 border-black cursor-pointer shadow-xs"
-            title="Simular 10 votos aleatórios para apuração"
+            className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-black font-black text-xs uppercase transition-all flex items-center gap-1 border-2 border-black cursor-pointer shadow-xs"
+            title="Adicionar +10 votos"
           >
-            <Sparkles className="w-4 h-4 text-[#f37021]" />
-            <span>+10 VOTOS DE TESTE</span>
+            <span>+10</span>
           </button>
 
           <button
             onClick={onOpenBoletim}
-            className="px-4 py-2 rounded bg-[#222] hover:bg-black text-white font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 border-2 border-black cursor-pointer shadow-xs"
+            className="px-3.5 py-2 rounded bg-[#222] hover:bg-black text-white font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 border-2 border-black cursor-pointer shadow-xs"
           >
             <FileText className="w-4 h-4" />
             <span>Boletim de Urna (BU)</span>
@@ -80,11 +125,11 @@ export const TallyDashboard: React.FC<TallyDashboardProps> = ({
 
           <button
             onClick={onReset}
-            className="px-3.5 py-2 rounded bg-red-100 hover:bg-red-200 text-red-900 font-black text-xs uppercase transition-all flex items-center gap-1.5 border-2 border-red-800 cursor-pointer"
+            className="px-3 py-2 rounded bg-red-100 hover:bg-red-200 text-red-900 font-black text-xs uppercase transition-all flex items-center gap-1 border-2 border-red-800 cursor-pointer"
             title="Emitir Zerésima e Resetar Urna"
           >
-            <RefreshCw className="w-4 h-4" />
-            <span>Emitir Zerésima</span>
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Zerésima</span>
           </button>
         </div>
       </div>
