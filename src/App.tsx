@@ -258,6 +258,18 @@ export default function App() {
       console.error('Error broadcasting vote to Firestore:', err);
     });
 
+    // Display instant notification toast on screen (mobile & desktop)
+    addVoteToast(newVote, candidatesMap);
+
+    // Haptic feedback on mobile phones if supported
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate([60, 40, 100]);
+      } catch {
+        // Ignore vibration errors
+      }
+    }
+
     setIsFim(true);
 
     // Trigger celebratory confetti on valid vote
