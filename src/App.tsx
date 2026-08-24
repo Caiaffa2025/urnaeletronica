@@ -8,53 +8,21 @@ import { TallyDashboard } from './components/TallyDashboard';
 import { BoletimModal } from './components/BoletimModal';
 import { AdminModal } from './components/AdminModal';
 import { audioService } from './services/audioService';
-import { subscribeCandidates } from './services/firebaseService';
-import { Vote, Info, CheckCircle2, ShieldCheck } from 'lucide-react';
-
-const STORAGE_KEY = 'urna_eleitoral_votos_v2';
-
-// Helper to generate realistic simulated votes
-const generateSimulatedVotes = (count: number, candidates: Record<string, Candidate>): VoteRecord[] => {
-  const batch: VoteRecord[] = [];
-  // Realistic political distribution (~52% Lula, ~42% Flávio, ~3% Branco, ~3% Nulo)
-  const pool: VoteType[] = [
-    '13', '13', '13', '13', '13', '13', '13', '13', '13', '13',
-    '22', '22', '22', '22', '22', '22', '22', '22',
-    'BRANCO',
-    'NULO'
-  ];
-  
-  const now = Date.now();
-  for (let i = 0; i < count; i++) {
-    const type = pool[Math.floor(Math.random() * pool.length)];
-    let candidateName = 'VOTO NULO';
-    let candidateNumber = type;
-    if (type === '13') {
-      candidateName = candidates['13']?.name || DEFAULT_CANDIDATES['13'].name;
-      candidateNumber = '13';
-    } else if (type === '22') {
-      candidateName = candidates['22']?.name || DEFAULT_CANDIDATES['22'].name;
-      candidateNumber = '22';
-    } else if (type === 'BRANCO') {
-      candidateName = 'VOTO EM BRANCO';
-      candidateNumber = 'BRANCO';
-    }
-
-    batch.push({
-      id: `vote-${now}-${i}-${Math.random().toString(36).substr(2, 5)}`,
-      type,
-      candidateName,
-      candidateNumber,
-      timestamp: new Date(now - Math.floor(Math.random() * 7200000) - (count - i) * 3000),
-    });
-  }
-  return batch;
-};
+import {
+  subscribeCandidates,
+  subscribeVotes,
+  saveVoteToFirestore,
+  saveVotesBatchToFirestore,
+  clearAllVotesInFirestore,
+  generateInitialVotes
+} from './services/firebaseService';
+import { Vote, Info, CheckCircle2, ShieldCheck, Radio } from 'lucide-react';
 
 export default function App() {
   // Candidate data state synchronized with Firestore database
   const [candidatesMap, setCandidatesMap] = useState<Record<string, Candidate>>(DEFAULT_CANDIDATES);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  const [isRealtimeActive, setIsRealtimeActive] = useState<boolean>(false);
 
   // Subscribe to real-time candidate updates from Firestore
   useEffect(() => {
@@ -70,34 +38,23 @@ export default function App() {
   const [isFim, setIsFim] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
-  // Voting statistics and audit log (initialized to 150 votes if no previous votes stored)
+  // Real-time votes state from Firestore (defaults to 150 simulated votes while Firestore connects)
   const [votes, setVotes] = useState<VoteRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-    // Default initial seed with 150 votes as requested
-    return generateSimulatedVotes(150, DEFAULT_CANDIDATES);
+    return generateInitialVotes(150, DEFAULT_CANDIDATES);
   });
+
+  // Subscribe to real-time votes from Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeVotes((firestoreVotes) => {
+      setVotes(firestoreVotes);
+      setIsRealtimeActive(true);
+    }, candidatesMap);
+
+    return () => unsubscribe();
+  }, [candidatesMap]);
 
   // Modal for Boletim de Urna
   const [isBoletimOpen, setIsBoletimOpen] = useState<boolean>(false);
-
-  // Save votes to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
-    } catch {
-      // Ignore
-    }
-  }, [votes]);
 
   // Derived selected candidate based on current digits
   const selectedCandidate: Candidate | null = candidatesMap[digits] || null;
@@ -178,14 +135,19 @@ export default function App() {
     audioService.playConfirmationChime(voteType);
 
     const newVote: VoteRecord = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `vote-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       type: voteType,
       candidateName,
       candidateNumber,
       timestamp: new Date(),
     };
 
-    setVotes((prev) => [...prev, newVote]);
+    // Optimistically update & broadcast to Firestore in real time
+    setVotes((prev) => [newVote, ...prev]);
+    saveVoteToFirestore(newVote).catch((err) => {
+      console.error('Error broadcasting vote to Firestore:', err);
+    });
+
     setIsFim(true);
 
     // Trigger celebratory confetti on valid vote
@@ -204,7 +166,7 @@ export default function App() {
       setIsBranco(false);
       setIsFim(false);
     }, 2500);
-  }, [isFim, isBranco, digits]);
+  }, [isFim, isBranco, digits, candidatesMap]);
 
   // Handler from candidate cards: directly type candidate number into Urna
   const handleSelectCandidateCard = (number: string) => {
@@ -227,42 +189,70 @@ export default function App() {
   };
 
   // Reset all tallies (Zerésima)
-  const handleReset = () => {
-    if (window.confirm('Tem certeza que deseja zerar a Urna? Todos os votos registrados serão apagados (Emissão da Zerésima).')) {
+  const handleReset = async () => {
+    if (window.confirm('Tem certeza que deseja zerar a Urna? Todos os votos registrados serão apagados da plataforma em tempo real (Emissão da Zerésima).')) {
       setVotes([]);
       setDigits('');
       setIsBranco(false);
       setIsFim(false);
       audioService.playCorrigeSound();
+      try {
+        await clearAllVotesInFirestore();
+      } catch (err) {
+        console.error('Error clearing votes in Firestore:', err);
+      }
     }
   };
 
   // Simulate batch votes for demonstration
-  const handleSimulateBatch = (count: number) => {
-    const newVotes = generateSimulatedVotes(count, candidatesMap);
-    setVotes((prev) => [...prev, ...newVotes]);
+  const handleSimulateBatch = async (count: number) => {
+    const newVotes = generateInitialVotes(count, candidatesMap);
+    setVotes((prev) => [...newVotes, ...prev]);
     audioService.playConfirmationChime();
+    try {
+      await saveVotesBatchToFirestore(newVotes);
+    } catch (err) {
+      console.error('Error batch saving votes in Firestore:', err);
+    }
   };
 
   // Set exactly 150 votes
-  const handleSetExact150 = () => {
-    const newVotes = generateSimulatedVotes(150, candidatesMap);
+  const handleSetExact150 = async () => {
+    const newVotes = generateInitialVotes(150, candidatesMap);
     setVotes(newVotes);
     audioService.playConfirmationChime();
+    try {
+      await clearAllVotesInFirestore();
+      await saveVotesBatchToFirestore(newVotes);
+    } catch (err) {
+      console.error('Error setting 150 votes in Firestore:', err);
+    }
   };
 
   // Fill up to 150 votes
-  const handleFillTo150 = () => {
+  const handleFillTo150 = async () => {
     const current = votes.length;
     if (current < 150) {
       const needed = 150 - current;
-      const newVotes = generateSimulatedVotes(needed, candidatesMap);
-      setVotes((prev) => [...prev, ...newVotes]);
+      const newVotes = generateInitialVotes(needed, candidatesMap);
+      setVotes((prev) => [...newVotes, ...prev]);
+      audioService.playConfirmationChime();
+      try {
+        await saveVotesBatchToFirestore(newVotes);
+      } catch (err) {
+        console.error('Error filling votes in Firestore:', err);
+      }
     } else {
-      const newVotes = generateSimulatedVotes(150, candidatesMap);
-      setVotes((prev) => [...prev, ...newVotes]);
+      const newVotes = generateInitialVotes(150, candidatesMap);
+      setVotes(newVotes);
+      audioService.playConfirmationChime();
+      try {
+        await clearAllVotesInFirestore();
+        await saveVotesBatchToFirestore(newVotes);
+      } catch (err) {
+        console.error('Error generating 150 votes in Firestore:', err);
+      }
     }
-    audioService.playConfirmationChime();
   };
 
   return (
@@ -288,6 +278,15 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-gray-800 pt-2 sm:pt-0">
+            {/* Real-time Cloud Sync Badge */}
+            <div className="flex items-center gap-1.5 bg-[#222] border border-emerald-500/60 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-black text-emerald-400 shadow-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="uppercase tracking-wider">TEMPO REAL ATIVO</span>
+            </div>
+
             <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-black bg-[#222] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded border border-gray-700">
               <Vote className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#009541]" />
               <span>VOTOS TOTAIS: <strong className="text-[#009541] text-xs sm:text-sm font-mono">{stats.totalVotes}</strong></span>

@@ -55,8 +55,12 @@ export const TallyDashboard: React.FC<TallyDashboardProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 sm:pb-6 border-b-2 border-black">
         <div>
           <div className="flex items-center gap-2 text-black font-black text-xs uppercase tracking-widest mb-1">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+            </span>
             <BarChart3 className="w-4 h-4 text-[#f37021]" />
-            <span>APURAÇÃO EM TEMPO REAL</span>
+            <span className="text-emerald-700 font-black">SINCRONIZAÇÃO EM TEMPO REAL</span>
           </div>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-black tracking-tight uppercase">
             Placar de Resultados da Eleição

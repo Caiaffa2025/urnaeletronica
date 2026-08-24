@@ -24,7 +24,8 @@ service cloud.firestore {
       allow create: if request.resource.data.keys().hasAll(['type', 'candidateName', 'candidateNumber', 'timestamp'])
         && request.resource.data.type is string
         && request.resource.data.type.size() <= 20;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if true;
     }
   }
 }
