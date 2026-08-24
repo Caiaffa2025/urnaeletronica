@@ -22,7 +22,7 @@ export const CANDIDATES: Record<string, Candidate> = {
     number: '22',
     party: 'Partido Liberal',
     partyAcronym: 'PL',
-    viceName: 'Valdemar Costa',
+    viceName: 'Vorcaro Banco Master',
     imageUrl: flavioImg,
     color: '#002B7F',
     slogan: 'Pelo Futuro da Nação'

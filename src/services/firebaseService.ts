@@ -78,6 +78,14 @@ export function subscribeCandidates(onUpdate: (candidatesMap: Record<string, Can
       snapshot.docs.forEach((docSnap) => {
         const data = docSnap.data();
         const number = docSnap.id;
+        
+        let viceName = data.viceName || DEFAULT_CANDIDATES[number]?.viceName || '';
+        if (number === '22' && (viceName === 'Valdemar Costa' || !viceName)) {
+          viceName = DEFAULT_CANDIDATES['22'].viceName;
+          // Silently update Firestore to sync with the new default vice name
+          setDoc(doc(db, CANDIDATES_COLLECTION, '22'), { viceName }, { merge: true }).catch(() => {});
+        }
+
         updatedMap[number] = {
           id: number,
           number: number,
@@ -85,7 +93,7 @@ export function subscribeCandidates(onUpdate: (candidatesMap: Record<string, Can
           shortName: data.shortName || DEFAULT_CANDIDATES[number]?.shortName || '',
           party: data.party || DEFAULT_CANDIDATES[number]?.party || '',
           partyAcronym: data.partyAcronym || DEFAULT_CANDIDATES[number]?.partyAcronym || '',
-          viceName: data.viceName || DEFAULT_CANDIDATES[number]?.viceName || '',
+          viceName: viceName,
           imageUrl: data.imageUrl || DEFAULT_CANDIDATES[number]?.imageUrl || '',
           color: data.color || DEFAULT_CANDIDATES[number]?.color || '#333333',
           slogan: data.slogan || DEFAULT_CANDIDATES[number]?.slogan || '',
