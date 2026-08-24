@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { Candidate, ElectionStats, VoteRecord, VoteType } from './types';
+import { Candidate, ElectionStats, VoteRecord, VoteType, VoteToastItem } from './types';
 import { CANDIDATES as DEFAULT_CANDIDATES } from './data/candidates';
 import { CandidateCard } from './components/CandidateCard';
 import { UrnaMachine } from './components/UrnaMachine';
 import { TallyDashboard } from './components/TallyDashboard';
 import { BoletimModal } from './components/BoletimModal';
 import { AdminModal } from './components/AdminModal';
+import { VoteToastContainer } from './components/VoteToastContainer';
 import { audioService } from './services/audioService';
 import {
   subscribeCandidates,
@@ -23,6 +24,49 @@ export default function App() {
   const [candidatesMap, setCandidatesMap] = useState<Record<string, Candidate>>(DEFAULT_CANDIDATES);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [isRealtimeActive, setIsRealtimeActive] = useState<boolean>(false);
+
+  // Real-time toast notifications
+  const [toasts, setToasts] = useState<VoteToastItem[]>([]);
+  const knownVoteIdsRef = useRef<Set<string> | null>(null);
+
+  const handleDismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const addVoteToast = useCallback((newVote: VoteRecord, candidates: Record<string, Candidate>) => {
+    const candidate = candidates[newVote.type] || DEFAULT_CANDIDATES[newVote.type];
+    let title = 'Voto Nulo';
+    let subtitle = 'Número não correspondente';
+    
+    if (newVote.type === '13') {
+      title = candidate?.name || DEFAULT_CANDIDATES['13'].name;
+      subtitle = `${candidate?.party || DEFAULT_CANDIDATES['13'].party} (${candidate?.partyAcronym || 'PT'})`;
+    } else if (newVote.type === '22') {
+      title = candidate?.name || DEFAULT_CANDIDATES['22'].name;
+      subtitle = `${candidate?.party || DEFAULT_CANDIDATES['22'].party} (${candidate?.partyAcronym || 'PL'})`;
+    } else if (newVote.type === 'BRANCO') {
+      title = 'Voto em Branco';
+      subtitle = 'Opção em Branco confirmada';
+    }
+
+    const toastId = `toast-${newVote.id}-${Date.now()}`;
+    const newToastItem: VoteToastItem = {
+      id: toastId,
+      type: newVote.type,
+      title,
+      subtitle,
+      candidateNumber: newVote.candidateNumber,
+      imageUrl: candidate?.imageUrl,
+      timestamp: newVote.timestamp instanceof Date ? newVote.timestamp : new Date(newVote.timestamp),
+    };
+
+    setToasts((prev) => [newToastItem, ...prev.slice(0, 3)]);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== toastId));
+    }, 5000);
+  }, []);
 
   // Subscribe to real-time candidate updates from Firestore
   useEffect(() => {
@@ -48,10 +92,44 @@ export default function App() {
     const unsubscribe = subscribeVotes((firestoreVotes) => {
       setVotes(firestoreVotes);
       setIsRealtimeActive(true);
+
+      if (knownVoteIdsRef.current === null) {
+        // Initial load: record existing IDs without flooding toasts
+        knownVoteIdsRef.current = new Set(firestoreVotes.map((v) => v.id));
+      } else {
+        // Subsequent real-time updates: detect newly added votes
+        const newlyAddedVotes = firestoreVotes.filter((v) => !knownVoteIdsRef.current!.has(v.id));
+        knownVoteIdsRef.current = new Set(firestoreVotes.map((v) => v.id));
+
+        if (newlyAddedVotes.length > 0) {
+          if (newlyAddedVotes.length <= 3) {
+            // Show toast for each individual vote
+            newlyAddedVotes.forEach((v) => {
+              addVoteToast(v, candidatesMap);
+            });
+          } else {
+            // Batch vote toast summary
+            const batchToastId = `batch-${Date.now()}`;
+            const first = newlyAddedVotes[0];
+            const batchToast: VoteToastItem = {
+              id: batchToastId,
+              type: first.type,
+              title: `${newlyAddedVotes.length} Novos Votos Recebidos`,
+              subtitle: 'Sincronização em lote via Firestore',
+              timestamp: new Date(),
+              count: newlyAddedVotes.length,
+            };
+            setToasts((prev) => [batchToast, ...prev.slice(0, 3)]);
+            setTimeout(() => {
+              setToasts((prev) => prev.filter((t) => t.id !== batchToastId));
+            }, 5000);
+          }
+        }
+      }
     }, candidatesMap);
 
     return () => unsubscribe();
-  }, [candidatesMap]);
+  }, [candidatesMap, addVoteToast]);
 
   // Modal for Boletim de Urna
   const [isBoletimOpen, setIsBoletimOpen] = useState<boolean>(false);
@@ -460,6 +538,13 @@ export default function App() {
           candidatesMap={candidatesMap}
         />
       </main>
+
+      {/* Real-time Vote Toast Notifications */}
+      <VoteToastContainer
+        toasts={toasts}
+        onDismiss={handleDismissToast}
+        candidatesMap={candidatesMap}
+      />
 
       {/* Footer */}
       <footer className="max-w-6xl mx-auto px-4 pt-8 border-t-2 border-black text-center text-xs text-gray-800 font-bold uppercase">

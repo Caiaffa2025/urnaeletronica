@@ -30,3 +30,14 @@ export interface ElectionStats {
 }
 
 export type UrnaScreenState = 'IDLE' | 'DIGITING' | 'BRANCO' | 'CONFIRMED_FIM';
+
+export interface VoteToastItem {
+  id: string;
+  type: VoteType;
+  title: string;
+  subtitle: string;
+  candidateNumber?: string;
+  imageUrl?: string;
+  timestamp: Date;
+  count?: number;
+}
